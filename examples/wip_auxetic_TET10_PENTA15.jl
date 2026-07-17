@@ -402,8 +402,8 @@ indNodesQuad = reduce(vcat,FE_penta_quad_boundary[indQuadsBack])
 indBackNodes = unique([indNodesTri;indNodesQuad])
 
 
-indMidBackNode = findmin(norm.(V.-P_back))
-indMidFrontNode = findmin(norm.(V.-P_front))
+_, indMidBackNode = findmin(norm.(V.-P_back))
+_, indMidFrontNode = findmin(norm.(V.-P_front))
 
 file_io = open(fileName_inp, "w")
 
@@ -425,11 +425,11 @@ endPart(file_io)
 
 startAssembly(file_io; name="Assembly-1")
     addInstance(file_io; name=instanceName_1, part=partName_1)
-    addNodes(file_io, P_ref) # Add reference node
+    addNodes(file_io, [P_ref]) # Add reference node
     addIndexSet(file_io, nodeSetName_assembly_REF, [1]; type=:nodes, indexOffset=0)
 
-    addIndexSet(file_io, nodeSetName_assembly_back, indMidBackNode; type=:nodes, indexOffset=0)
-    addIndexSet(file_io, nodeSetName_assembly_front, indMidFrontNode; type=:nodes, indexOffset=0)
+    addIndexSet(file_io, nodeSetName_assembly_back, indMidBackNode; type=:nodes, indexOffset=0, instance=instanceName_1)
+    addIndexSet(file_io, nodeSetName_assembly_front, indMidFrontNode; type=:nodes, indexOffset=0, instance=instanceName_1)
 
     for (m,i) in enumerate(indFrontNodes)        
         nodeSetName_NOW = "NODE_X0_$m"
