@@ -1,0 +1,19 @@
+name = "Auxetic_Bilayered_Cylinder"
+uuid = "1d66a0fe-001f-4d05-9a0e-50f6ec2b3acd"
+version = "1.0.0-DEV"
+authors = ["Kevin Moerman"]
+
+[deps]
+AbaqusTools = "2e6fa817-2ad1-4e93-973c-76fafc281e02"
+Comodo = "59095408-2761-4f7a-bdc2-044e78630271"
+
+[compat]
+AbaqusTools = "0.1.0"
+Comodo = "1.0.3"
+julia = "1.10.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
