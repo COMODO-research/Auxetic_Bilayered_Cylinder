@@ -1,3 +1,4 @@
+using Auxetic_Bilayered_Cylinder
 using Comodo
 using Comodo.GLMakie
 using Comodo.GeometryBasics
@@ -10,6 +11,13 @@ using Printf
 
 # Visualization parameters
 GLMakie.closeall()
+
+saveDir = joinpath(Auxetic_Bilayered_Cylinder_dir(),"assets","temp")
+if !isdir(saveDir)
+    mkdir(saveDir)      
+end
+
+fileName_inp = joinpath(saveDir, "temp.inp")
 
 markersize1  = 10
 markersize2  = 10
@@ -235,16 +243,34 @@ ind_curve_y = edges2curve(edges_y)
 V_curve_x0_sparse = [VT[ind_curve_x[length(ind_curve_x)]], Point{3,Float64}(0.0,0.0,0.0), VT[ind_curve_x[1]]]
 V_curve_x0 = evenly_space(V_curve_x0_sparse, pointSpacing; close_loop = false, spline_order = 2, must_points = [1,2,3])      
 
-Vf_region_curve = [VT[ind_curve_x];V_curve_x0[2:end-1]]
+# Meshing front surface
+Vf_region_curve = [VT[ind_curve_x]; V_curve_x0[2:end-1]]
 Vf_region_curve = [Point{3,Float64}(v[2],v[3],v[1]) for v in Vf_region_curve] # Change to XY space for meshing
 Ff,Vf,Cf = regiontrimesh((Vf_region_curve,),([1],),(pointSpacingSide))
 Vf = [Point{3,Float64}(v[3],v[1],v[2]) for v in Vf] # Change to XY space for meshing
+
+# ###############################################################################
+# # Visualise strip
+
+# ## Visualise repeatable unit
+# fig1 = Figure(size = (1200,800), fontsize = 20)
+# ax1 = AxisGeom(fig1[1, 1], title="Curves")
+# lines!(ax1, VT[ind_curve_x], color=:red, linewidth=2.0)
+# lines!(ax1, V_curve_x0[2:end-1], color=:blue, linewidth=2.0)
+# scatter!(V_curve_x0[2:end-1],color=:black, markersize=15)
+# hp1 = meshplot!(ax1, Ff,Vf, strokewidth=0.0, color=:white)
+# screen = display(GLMakie.Screen(), fig1)
+
+# ###############################################################################
+
+# Create back by copying front
 Fb = deepcopy(Ff)
 Vb = deepcopy(Vf)
 v_shift = Point{3,Float64}(axialLength,0.0,0.0)
 Vb .+= v_shift
 invert_faces!(Ff)
 
+# Construct curves for bottom surface 
 Vc1 = reverse(V_curve_x0)
 Vc2 = VT[ind_curve_y[2:end-1]]
 v_shift = Point{3,Float64}(axialLength,0.0,0.0)
@@ -255,14 +281,14 @@ Vc4 = reverse(Vc2)
 Vc4 .+= v_shift
 
 V_curve_x0_2 = reverse(deepcopy(V_curve_x0))
-# v_shift = Point{3,Float64}(axialLength,0.0,0.0)
 V_curve_x0_2 .+= v_shift
 V_curve_y0 = reverse(VT[ind_curve_y[2:end-1]])
 V_curve_y0_2 = deepcopy(V_curve_y0)
 v_shift = Point{3,Float64}(0.0,2.0,0.0)
 V_curve_y0_2 .+= v_shift
+
+# Meshing bottom surface 
 Vm_region_curve = [Vc1; Vc2; Vc3; Vc4]
-# Vm_region_curve = [Vc1; V_curve_y0_2; V_curve_x0_2; V_curve_y0]
 Fm,Vm,Cm = regiontrimesh((Vm_region_curve,),([1],),(pointSpacingSide))
 invert_faces!(Fm)
 
@@ -369,7 +395,8 @@ indNodesTri = reduce(vcat,Fb_tet[Cb_tet.==3])
 indNodesQuad = reduce(vcat,FE_penta_quad_boundary[indQuadsBack])
 indBackNodes = unique([indNodesTri;indNodesQuad])
 
-file_io = open("/home/kevin/Desktop/temp.inp", "w")
+file_io = open(fileName_inp, "w")
+
 addHeader(file_io,jobName)
 addPart(file_io, partName_1; firstTime = true)
     addNodes(file_io, V)
@@ -528,7 +555,12 @@ hp82 = scatter!(ax32, V[indBottomNodes], markersize=markersize1, color = :red)
 hp92 = scatter!(ax32, V[indFrontNodes], markersize=markersize1, color = :green)
 hp102 = scatter!(ax32, V[indBackNodes], markersize=markersize1, color = :orange)
 
+
+scatter!(ax32, Point{3,Float64}( axialLength/2.0, 0.0, 0.0), markersize=25, color = :purple)
+scatter!(ax32, Point{3,Float64}(-axialLength/2.0, 0.0, 0.0), markersize=25, color = :purple)
+
 Legend(fig2[1, 2], [hp82, hp92, hp102], ["Bottom nodes", "Front nodes", "Back nodes"])
+
 # hpm = mesh!(ax3,GeometryBasics.Mesh(V,Fb_tet[Cb_tet.==4]), color=:red,  transparency=true)
 # scatter!(ax3,V[indBottomNodes],markersize=25, color = :red)
 
