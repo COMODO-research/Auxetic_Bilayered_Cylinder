@@ -96,6 +96,11 @@ tolLevel = pointSpacing/100.0 # Tolerance level
 
 tetrahedral_volume_factor = 10.0
 
+## Derived parameters
+P_front = Point{3,Float64}( axialLength/2.0, 0.0, 0.0) # Mid edge
+P_back  = Point{3,Float64}(-axialLength/2.0, 0.0, 0.0) # Mid edge
+P_ref = Point{3,Float64}( axialLength, 0.0, 0.0) # An external reference point 
+
 ## Define ellipse curve segment
 np_def = 500 # Number of points to define ellipse
 dl = A-r1-r2
@@ -357,8 +362,9 @@ nodeSetName_3 = "NodeSet-3_Bottom"
 nodeSetName_4 = "NodeSet-4_Front"
 nodeSetName_5 = "NodeSet-5_Back"
 
-V_ref = [Point{3,Float64}(0.0, 0.0, 0.0)]
 nodeSetName_assembly_REF = "REF_X"
+nodeSetName_assembly_back = "NodeSet-6_MidBack"
+nodeSetName_assembly_front = "NodeSet-6_MidFront"
 
 FE_penta_quad = FE_penta[2]
 indBoundary_penta_quads = boundaryfaceindices(FE_penta_quad)
@@ -395,6 +401,10 @@ indNodesTri = reduce(vcat,Fb_tet[Cb_tet.==3])
 indNodesQuad = reduce(vcat,FE_penta_quad_boundary[indQuadsBack])
 indBackNodes = unique([indNodesTri;indNodesQuad])
 
+
+indMidBackNode = findmin(norm.(V.-P_back))
+indMidFrontNode = findmin(norm.(V.-P_front))
+
 file_io = open(fileName_inp, "w")
 
 addHeader(file_io,jobName)
@@ -406,7 +416,7 @@ addPart(file_io, partName_1; firstTime = true)
     addIndexSet(file_io, nodeSetName_2, unique(reduce(vcat,E_penta)); type=:nodes, indexOffset=0)
     addIndexSet(file_io, nodeSetName_3, indBottomNodes; type=:nodes, indexOffset=0)
     addIndexSet(file_io, nodeSetName_4, indFrontNodes; type=:nodes, indexOffset=0)
-    addIndexSet(file_io, nodeSetName_5, indBackNodes; type=:nodes, indexOffset=0)
+    addIndexSet(file_io, nodeSetName_5, indBackNodes; type=:nodes, indexOffset=0)    
     addIndexSet(file_io, elementSetName_1, 1:length(E_tet); type=:elements)
     addIndexSet(file_io, elementSetName_2, 1:length(E_penta); type=:elements, indexOffset=length(E_tet))
     addSolidSection(file_io, elementSetName_1, materialName_1)
@@ -415,8 +425,11 @@ endPart(file_io)
 
 startAssembly(file_io; name="Assembly-1")
     addInstance(file_io; name=instanceName_1, part=partName_1)
-    addNodes(file_io, V_ref) # Add reference node
+    addNodes(file_io, P_ref) # Add reference node
     addIndexSet(file_io, nodeSetName_assembly_REF, [1]; type=:nodes, indexOffset=0)
+
+    addIndexSet(file_io, nodeSetName_assembly_back, indMidBackNode; type=:nodes, indexOffset=0)
+    addIndexSet(file_io, nodeSetName_assembly_front, indMidFrontNode; type=:nodes, indexOffset=0)
 
     for (m,i) in enumerate(indFrontNodes)        
         nodeSetName_NOW = "NODE_X0_$m"
@@ -556,8 +569,9 @@ hp92 = scatter!(ax32, V[indFrontNodes], markersize=markersize1, color = :green)
 hp102 = scatter!(ax32, V[indBackNodes], markersize=markersize1, color = :orange)
 
 
-scatter!(ax32, Point{3,Float64}( axialLength/2.0, 0.0, 0.0), markersize=25, color = :purple)
-scatter!(ax32, Point{3,Float64}(-axialLength/2.0, 0.0, 0.0), markersize=25, color = :purple)
+scatter!(ax32, P_front, markersize=25, color = :purple)
+scatter!(ax32, P_back, markersize=25, color = :purple)
+scatter!(ax32, P_ref, markersize=25, color = :purple)
 
 Legend(fig2[1, 2], [hp82, hp92, hp102], ["Bottom nodes", "Front nodes", "Back nodes"])
 
